@@ -38,6 +38,22 @@ export class CategoriaService {
        })  ;
     }
 
+    async deletar(id: string) {
+  const existe = await this.categoriaRepository.buscarPorId(id);
+  if (!existe) {
+    throw new Error('Categoria não encontrada');
+  }
+
+  try {
+    return await this.categoriaRepository.deletar(id);
+  } catch (error: any) {
+    if (error.code === 'P2003') {
+      throw new Error('Não é possível excluir uma categoria que possui produtos vinculados.');
+    }
+    throw error;
+  }
+}
+
 
 
     

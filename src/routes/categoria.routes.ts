@@ -55,4 +55,33 @@ categoriaRoutes.get('/categorias', (req, res) => categoriaController.listar(req,
  */
 categoriaRoutes.post('/categorias', autenticar, autorizarAdmin, (req, res) => categoriaController.criar(req, res));
 
+
+
+/**
+ * @swagger
+ * /categorias/{id}:
+ *   delete:
+ *     summary: Remove uma categoria pelo ID
+ *     tags: [Categorias]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID único (UUID) da categoria
+ *     responses:
+ *       200:
+ *         description: Categoria deletada com sucesso.
+ *       400:
+ *         description: Categoria possui produtos vinculados ou requisição inválida.
+ *       404:
+ *         description: Categoria não encontrada.
+ */
+categoriaRoutes.delete('/categorias/:id', autenticar, autorizarAdmin, (req, res) =>
+  categoriaController.deletar(req, res)
+);
+
 export default categoriaRoutes;

@@ -107,4 +107,50 @@ produtoRoutes.get('/produtos/:id', (req, res) => produtoController.buscarPorId(r
  */
 produtoRoutes.post('/produtos', autenticar, autorizarAdmin, (req, res) => produtoController.criar(req, res));
 
+
+/**
+ * @swagger
+ * /produtos/{id}:
+ *   put:
+ *     summary: Atualiza um produto pelo ID
+ *     tags: [Produtos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Produto atualizado com sucesso.
+ *       404:
+ *         description: Produto não encontrado.
+ *   delete:
+ *     summary: Remove um produto pelo ID
+ *     tags: [Produtos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Produto deletado com sucesso.
+ *       404:
+ *         description: Produto não encontrado.
+ */
+produtoRoutes.put('/produtos/:id', autenticar, autorizarAdmin, (req, res) =>
+  produtoController.atualizar(req, res)
+);
+
+produtoRoutes.delete('/produtos/:id', autenticar, autorizarAdmin, (req, res) =>
+  produtoController.deletar(req, res)
+);
+
+
 export default produtoRoutes;

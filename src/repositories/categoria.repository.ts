@@ -29,5 +29,11 @@ export class CategoriaRepository {
     });
   }
 
+  async deletar(id: string) {
+  return prisma.categoria.delete({
+    where: { id },
+  });
+}
+
 }
 

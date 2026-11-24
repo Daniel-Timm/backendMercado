@@ -39,4 +39,17 @@ export class CategoriaController {
       return res.status(400).json({ erro: error.message });
     }
   }
+
+  async deletar(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    await this.categoriaService.deletar(id as string);
+    return res.status(200).json({ mensagem: 'Categoria deletada com sucesso.' });
+  } catch (error: any) {
+    const status = error.message.includes('não encontrada') ? 404 : 400;
+    return res.status(status).json({ erro: error.message });
+  }
+}
+
+  
 }
