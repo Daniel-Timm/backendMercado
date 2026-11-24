@@ -1,0 +1,272 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------- Enums ----------
+
+enum Papel {
+  CLIENTE
+  ADMIN
+}
+
+enum StatusPedido {
+  PENDENTE
+  CONFIRMADO
+  EM_SEPARACAO
+  EM_ENTREGA
+  ENTREGUE
+  CANCELADO
+}
+
+enum FormaPagamento {
+  PIX
+  CARTAO_CREDITO
+  CARTAO_DEBITO
+  DINHEIRO
+}
+
+// ---------- Usuários ----------
+
+model Usuario {
+  id           String   @id @default(uuid())
+  nome         String
+  email        String   @unique
+  senhaHash    String
+  telefone     String?
+  papel        Papel    @default(CLIENTE)
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+  cpf          String?  @unique
+
+  enderecos Endereco[]
+  carrinho  Carrinho?
+  pedidos   Pedido[]
+  listas    ListaCompras[]
+  contatos  Contato[]
+
+  @@map("usuarios")
+}
+
+model Endereco {
+  id           String   @id @default(uuid())
+  apelido      String
+  cep          String
+  logradouro   String
+  numero       String
+  complemento  String?
+  bairro       String
+  cidade       String
+  estado       String   @db.Char(2)
+  principal    Boolean  @default(false)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  usuarioId String
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@map("enderecos")
+}
+
+// ---------- Catálogo ----------
+
+model Categoria {
+  id           String   @id @default(uuid())
+  nome         String
+  slug         String   @unique
+  icone        String?
+  ordem        Int      @default(0)
+  ativa        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  paiId  String?
+  pai    Categoria?  @relation("Subcategorias", fields: [paiId], references: [id])
+  filhas Categoria[] @relation("Subcategorias")
+
+  produtos Produto[]
+
+  @@map("categorias")
+}
+
+model Produto {
+  id            String   @id @default(uuid())
+  nome          String
+  slug          String   @unique
+  descricao     String?
+  codigoBarras  String?  @unique
+  imagemUrl     String?
+  preco         Decimal  @db.Decimal(10, 2)
+  precoOriginal Decimal? @db.Decimal(10, 2)
+  estoque       Int      @default(0)
+  ativo         Boolean  @default(true)
+  criadoEm      DateTime @default(now())
+  atualizadoEm  DateTime @updatedAt
+
+  categoriaId String
+  categoria   Categoria @relation(fields: [categoriaId], references: [id])
+
+  colecoes      ProdutoColecao[]
+  itensCarrinho ItemCarrinho[]
+  itensPedido   ItemPedido[]
+  itensLista    ItemListaCompras[]
+
+  @@index([categoriaId])
+  @@map("produtos")
+}
+
+model Colecao {
+  id       String    @id @default(uuid())
+  nome     String
+  slug     String    @unique
+  ordem    Int       @default(0)
+  ativa    Boolean   @default(true)
+  inicioEm DateTime?
+  fimEm    DateTime?
+
+  produtos ProdutoColecao[]
+
+  @@map("colecoes")
+}
+
+model ProdutoColecao {
+  ordem Int @default(0)
+
+  colecaoId String
+  colecao   Colecao @relation(fields: [colecaoId], references: [id], onDelete: Cascade)
+  produtoId String
+  produto   Produto @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+
+  @@id([colecaoId, produtoId])
+  @@map("produtos_colecoes")
+}
+
+model Banner {
+  id        String    @id @default(uuid())
+  titulo    String
+  imagemUrl String
+  linkUrl   String?
+  ordem     Int       @default(0)
+  ativo     Boolean   @default(true)
+  inicioEm  DateTime?
+  fimEm     DateTime?
+
+  @@map("banners")
+}
+
+// ---------- Carrinho ----------
+
+model Carrinho {
+  id           String   @id @default(uuid())
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  usuarioId String  @unique
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  itens ItemCarrinho[]
+
+  @@map("carrinhos")
+}
+
+model ItemCarrinho {
+  id         String @id @default(uuid())
+  quantidade Int    @default(1)
+
+  carrinhoId String
+  carrinho   Carrinho @relation(fields: [carrinhoId], references: [id], onDelete: Cascade)
+  produtoId  String
+  produto    Produto  @relation(fields: [produtoId], references: [id])
+
+  @@unique([carrinhoId, produtoId])
+  @@map("itens_carrinho")
+}
+
+// ---------- Pedidos ----------
+
+model Pedido {
+  id              String         @id @default(uuid())
+  numero          Int            @unique @default(autoincrement())
+  status          StatusPedido   @default(PENDENTE)
+  formaPagamento  FormaPagamento
+  subtotal        Decimal        @db.Decimal(10, 2)
+  taxaEntrega     Decimal        @default(0) @db.Decimal(10, 2)
+  total           Decimal        @db.Decimal(10, 2)
+  enderecoEntrega Json
+  observacao      String?
+  criadoEm        DateTime       @default(now())
+  atualizadoEm    DateTime       @updatedAt
+
+  usuarioId String
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  itens ItemPedido[]
+
+  @@index([usuarioId])
+  @@map("pedidos")
+}
+
+model ItemPedido {
+  id            String  @id @default(uuid())
+  nomeProduto   String
+  precoUnitario Decimal @db.Decimal(10, 2)
+  quantidade    Int
+
+  pedidoId  String
+  pedido    Pedido  @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  produtoId String
+  produto   Produto @relation(fields: [produtoId], references: [id])
+
+  @@map("itens_pedido")
+}
+
+// ---------- Lista de compras ----------
+
+model ListaCompras {
+  id       String   @id @default(uuid())
+  nome     String
+  criadoEm DateTime @default(now())
+
+  usuarioId String
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  itens ItemListaCompras[]
+
+  @@index([usuarioId])
+  @@map("listas_compras")
+}
+
+model ItemListaCompras {
+  id         String @id @default(uuid())
+  quantidade Int    @default(1)
+
+  listaId   String
+  lista     ListaCompras @relation(fields: [listaId], references: [id], onDelete: Cascade)
+  produtoId String
+  produto   Produto      @relation(fields: [produtoId], references: [id], onDelete: Cascade)
+
+  @@unique([listaId, produtoId])
+  @@map("itens_lista_compras")
+}
+
+// ---------- Fale Conosco ----------
+
+model Contato {
+  id          String   @id @default(uuid())
+  nome        String
+  email       String
+  assunto     String
+  mensagem    String
+  respondido  Boolean  @default(false)
+  criadoEm    DateTime @default(now())
+
+  usuarioId String?
+  usuario   Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@map("contatos")
+}
